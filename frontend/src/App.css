@@ -155,16 +155,19 @@
   display: flex;
   gap: 6px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
 }
 
 .weekday-select button {
-  padding: 6px 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
   font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
   cursor: pointer;
 }
 

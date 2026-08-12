@@ -1,8 +1,8 @@
 export const WEEKDAY_OPTIONS = [
-  { value: "auto", label: "자동 감지" },
+  { value: "auto", label: "자동" },
   { value: "weekday", label: "평일" },
   { value: "saturday", label: "토요일" },
-  { value: "sunday", label: "일요일 · 공휴일" },
+  { value: "sunday", label: "일·공휴일" },
 ];
 
 // 지하철 운행일은 자정이 아니라 새벽 5시 무렵 바뀌므로, 새벽 0~5시 사이에는
