@@ -75,6 +75,8 @@
   font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .header {
