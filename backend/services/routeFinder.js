@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { getTransferMinutes } = require("../data/transferTimes");
 const { AVG_MINUTES_PER_STOP } = require("../data/estimate");
+const { matchesQuery } = require("../utils/chosung");
 
 const LINE_DATA_PATH = path.join(__dirname, "..", "data", "lineStations.json");
 
@@ -126,7 +127,7 @@ function searchAllStations(query) {
   if (!graph) return [];
   const results = [];
   graph.stationToLines.forEach((lines, name) => {
-    if (query && !name.includes(query)) return;
+    if (!matchesQuery(name, query)) return;
     lines.forEach((line) => {
       if (!line.includes(" ")) {
         // 지선(예: "6호선 응암순환(단방향)")은 검색 결과에서는 본선 이름으로 보여준다.

@@ -2,14 +2,16 @@ const express = require("express");
 const mockStations = require("../data/mockStations");
 const { lookupDirectional } = require("../services/lastTrainLookup");
 const { getMainLineStations } = require("../services/routeFinder");
+const { matchesQuery } = require("../utils/chosung");
 
 const router = express.Router();
 
-// 역 이름 검색 (자동완성용). 현재는 샘플 역 목록 기준이며, 추후 "역명으로 지하철역 검색" API로 대체 가능.
+// 역 이름 검색 (자동완성용, 초성 검색 지원). 현재는 샘플 역 목록 기준이며, 추후
+// "역명으로 지하철역 검색" API로 대체 가능.
 router.get("/stations", (req, res) => {
   const q = (req.query.q || "").trim();
   const results = mockStations
-    .filter((s) => !q || s.name.includes(q))
+    .filter((s) => matchesQuery(s.name, q))
     .map((s) => ({ name: s.name, line: s.line }));
   res.json({ results });
 });
