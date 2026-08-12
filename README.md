@@ -133,3 +133,45 @@ npm run dev
 
 프론트엔드 개발 서버는 `/api`로 오는 요청을 자동으로 백엔드(4000번 포트)로 전달하도록
 `vite.config.js`에 프록시가 설정되어 있습니다.
+
+## 배포 (Render + Vercel)
+
+API 키는 백엔드 서버 하나에만 있으면 되고, 접속하는 모든 사용자가 그 백엔드를 공유해서
+실제 데이터를 받습니다 — 사용자마다 각자 키를 발급받을 필요가 없습니다. 저장소:
+https://github.com/puara-g/LastTrain
+
+### 1. 백엔드 → Render
+
+1. [render.com](https://render.com) 가입 후 **New > Web Service** > 이 GitHub 저장소 선택
+2. 설정:
+   - **Root Directory**: `backend`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+3. **Environment** 탭에서 `backend/.env`에 있는 값들을 그대로 등록:
+   - `SEOUL_API_KEY` (실제 키)
+   - `SEOUL_API_BASE`, `SEOUL_API_SERVICE`, `SEOUL_API_STATION_SEARCH_SERVICE`, `SEOUL_API_QUICK_EXIT_SERVICE` (`.env.example` 참고, 보통 기본값 그대로)
+4. 배포되면 `https://your-service-name.onrender.com` 같은 주소가 생깁니다. 이 주소를
+   기억해두세요(2단계에서 필요).
+
+무료 플랜은 트래픽이 없으면 서버가 잠들었다가, 첫 요청에서 깨어나는 데 몇십 초 걸릴 수
+있어요. 사람이 거의 안 쓰는 새벽 시간대라면 크게 문제는 아닙니다.
+
+### 2. 프론트엔드 → Vercel
+
+1. [vercel.com](https://vercel.com) 가입 후 **Add New > Project** > 이 GitHub 저장소 선택
+2. 설정:
+   - **Root Directory**: `frontend`
+   - Framework Preset은 Vite로 자동 인식됩니다.
+3. **Environment Variables**에 추가:
+   - `VITE_API_BASE_URL` = 1단계에서 받은 Render 주소 (예: `https://your-service-name.onrender.com`, 끝에 `/` 없이)
+4. Deploy를 누르면 `https://your-project.vercel.app` 같은 공개 주소가 생기고, 이게 유저들에게
+   공유할 최종 링크입니다.
+
+### 참고
+
+- 백엔드 `server.js`는 이미 `app.use(cors())`로 모든 출처를 허용하고 있어서 Vercel↔Render
+  간 요청이 바로 됩니다. 나중에 보안을 조이고 싶으면 Vercel 도메인만 허용하도록 좁힐 수 있어요.
+- 코드를 고친 뒤 `git push`만 하면 Render/Vercel 둘 다 자동으로 재배포됩니다.
+- 서울 열린데이터광장 키는 하루 호출 한도가 있을 수 있어요. 사용자가 많아지면 한도에
+  걸릴 수 있으니, 그럴 땐 캐싱을 늘리거나(현재 빠른하차 정보만 캐시 중) 키를 추가로
+  발급받는 걸 고려하세요.
