@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { searchStations } from "./api";
+import { getLineColor, getLineNumber } from "./lineColors";
 
 export default function StationPicker({ placeholder, value, onSelect, searchFn = searchStations }) {
   const [query, setQuery] = useState(value ? `${value.name} (${value.line})` : "");
@@ -40,6 +41,9 @@ export default function StationPicker({ placeholder, value, onSelect, searchFn =
           {suggestions.map((s) => (
             <li key={`${s.line}-${s.name}`}>
               <button onClick={() => handlePick(s)}>
+                <span className="line-badge" style={{ backgroundColor: getLineColor(s.line) }}>
+                  {getLineNumber(s.line)}
+                </span>
                 {s.name} <span className="line-tag">{s.line}</span>
               </button>
             </li>

@@ -129,6 +129,9 @@
 
 .suggestions li button {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   text-align: left;
   padding: 10px 14px;
   background: none;
