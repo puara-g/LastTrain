@@ -1,0 +1,384 @@
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+.search-box {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.search-box input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+}
+
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  z-index: 10;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.suggestions li button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.suggestions li button:hover {
+  background: #f4f4f5;
+}
+
+.line-tag {
+  color: #888;
+  font-size: 13px;
+  margin-left: 6px;
+}
+
+.weekday-select {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.weekday-select button {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #ccc;
+  background: white;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.weekday-select button.active {
+  background: #1a1a1a;
+  color: white;
+  border-color: #1a1a1a;
+}
+
+.status {
+  text-align: center;
+  color: #666;
+}
+
+.status.error {
+  color: #c0392b;
+}
+
+.banner {
+  background: #fff4e5;
+  border: 1px solid #ffc069;
+  color: #874d00;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.weekday-badge {
+  color: #888;
+  font-size: 13px;
+  margin: -4px 0 16px;
+}
+
+.cards {
+  display: grid;
+  gap: 12px;
+}
+
+.card {
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.leg-card {
+  padding-top: 14px;
+}
+
+.direction {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #666;
+}
+
+.leg-direction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.line-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.time {
+  margin: 0 0 4px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.remaining {
+  margin: 0;
+  color: #1a73e8;
+  font-weight: 600;
+}
+
+.note {
+  font-size: 12px;
+  color: #888;
+}
+
+.raw {
+  font-size: 12px;
+  background: #f7f7f7;
+  padding: 10px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  background: #1a1a1a;
+  color: white;
+  border-color: #1a1a1a;
+}
+
+.route-inputs {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.primary-button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: #1a73e8;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.primary-button:disabled {
+  background: #b8cdf0;
+  cursor: not-allowed;
+}
+
+.deadline-box {
+  background: #eaf2ff;
+  border: 1px solid #a8c8ff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.deadline-box.unreachable {
+  background: #fff4e5;
+  border-color: #ffc069;
+}
+
+.deadline-label {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #555;
+}
+
+.deadline-time {
+  margin: 0 0 4px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #1a4fd6;
+}
+
+.total-estimate {
+  text-align: center;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.arrival-estimate {
+  text-align: center;
+  color: #555;
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+.route-leg {
+  font-size: 18px !important;
+  font-weight: 700;
+}
+
+.transfer-chip-wrap {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  margin: -2px 0;
+}
+
+.transfer-chip-wrap::before {
+  content: "";
+  position: absolute;
+  top: -14px;
+  bottom: -14px;
+  left: 50%;
+  width: 2px;
+  background: repeating-linear-gradient(to bottom, #d9c38a 0, #d9c38a 4px, transparent 4px, transparent 8px);
+  z-index: 0;
+}
+
+.transfer-chip {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #fff8ec;
+  border: 1px solid #f0cd7a;
+  border-radius: 999px;
+  font-size: 13px;
+  color: #7a5200;
+  margin: 10px 0;
+}
+
+.transfer-chip-station {
+  font-weight: 700;
+}
+
+.transfer-chip-dot {
+  color: #d9b968;
+}
+
+.transfer-chip-walk {
+  color: #9c7a2e;
+}
+
+.leg-own-last-train {
+  margin-top: 10px;
+  border-top: 1px dashed #e5e5e5;
+  padding-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.mini-card {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  background: #f7f7f7;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.quick-exit {
+  margin-top: 10px;
+  border-top: 1px dashed #e5e5e5;
+  padding-top: 10px;
+}
+
+.quick-exit-title {
+  font-weight: 600;
+  color: #444 !important;
+}
+
+.quick-exit-block {
+  margin-top: 8px;
+}
+
+.quick-exit-direction {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 4px;
+  word-break: keep-all;
+}
+
+.quick-exit-facility {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 12px;
+  color: #888;
+  line-height: 1.5;
+  padding-left: 8px;
+}
+
+.quick-exit-facility-name {
+  flex-shrink: 0;
+  color: #666;
+}
+
+.quick-exit-doors {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
