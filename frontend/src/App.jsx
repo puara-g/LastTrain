@@ -5,6 +5,7 @@ import RouteFinder from "./RouteFinder";
 import LastTrainCards from "./LastTrainCards";
 import QuickExitInfo from "./QuickExitInfo";
 import { WEEKDAY_OPTIONS, detectWeekdayType } from "./weekday";
+import { getLineColor, getLineNumber } from "./lineColors";
 import "./App.css";
 
 function SingleStationLookup({ now }) {
@@ -59,7 +60,10 @@ function SingleStationLookup({ now }) {
 
       {result && (
         <div className="result">
-          <h2>
+          <h2 className="result-title">
+            <span className="line-badge" style={{ backgroundColor: getLineColor(result.line) }}>
+              {getLineNumber(result.line)}
+            </span>
             {result.name} <span className="line-tag">{result.line}</span>
           </h2>
           <p className="weekday-badge">

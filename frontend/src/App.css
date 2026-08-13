@@ -153,6 +153,12 @@
   margin-left: 6px;
 }
 
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .weekday-select {
   display: flex;
   gap: 6px;
