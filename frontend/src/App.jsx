@@ -3,7 +3,6 @@ import { getLastTrain, searchAllStations } from "./api";
 import StationPicker from "./StationPicker";
 import RouteFinder from "./RouteFinder";
 import LastTrainCards from "./LastTrainCards";
-import QuickExitInfo from "./QuickExitInfo";
 import { WEEKDAY_OPTIONS, detectWeekdayType } from "./weekday";
 import { getLineColor, getLineNumber } from "./lineColors";
 import "./App.css";
@@ -79,7 +78,6 @@ function SingleStationLookup({ now }) {
           </p>
 
           <LastTrainCards result={result} now={now} />
-          <QuickExitInfo name={result.name} line={result.line} />
         </div>
       )}
     </>
