@@ -18,6 +18,20 @@ function minutesToTime(totalMinutes) {
 
 const NO_TRAIN_REASON = "이 역은 이 방향으로 가는 열차가 없어요(종점이거나 단방향 구간).";
 
+// 실제 API가 돌려주는 종착역명은 "불암산(당고개)" 대신 "불암산"만 오는 것처럼, 우리
+// lineStations.json의 병기 표기와 정확히 안 맞을 수 있다. 그럴 땐 괄호 앞부분/괄호 안
+// 내용으로도 찾아본다("총신대입구(이수)" 같은 역도 같은 문제).
+function findStationIndex(stations, name) {
+  const exact = stations.indexOf(name);
+  if (exact !== -1) return exact;
+  return stations.findIndex((s) => {
+    const base = s.replace(/\([^)]*\)$/, "");
+    if (base === name) return true;
+    const paren = s.match(/\(([^)]+)\)$/)?.[1];
+    return paren === name;
+  });
+}
+
 // mockStations에 손으로 등록해둔 15개 역이 아니어도, "역명으로 역외부코드 찾기" API로
 // 즉석에서 코드를 찾아 공식 막차 API를 바로 호출해본다. 상행/하행 중 어느 쪽이 요청받은
 // forward/backward에 해당하는지는 API가 돌려주는 종착역명을 노선 배열에서의 위치와
@@ -34,7 +48,7 @@ async function lookupOfficialDynamic({ name, line, weekdayType, direction }) {
 
   function classify(result) {
     if (!result) return null;
-    const destIndex = stations.indexOf(result.destination);
+    const destIndex = findStationIndex(stations, result.destination);
     if (destIndex === -1) return null; // 종착역이 이 배열 밖(코레일 직결 구간 등)이면 판단 불가
     return destIndex > stationIndex ? "forward" : "backward";
   }
