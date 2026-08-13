@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { getTransferMinutes } = require("../data/transferTimes");
 const { AVG_MINUTES_PER_STOP } = require("../data/estimate");
-const { matchesQuery } = require("../utils/chosung");
+const { matchesQuery, parseLineQuery } = require("../utils/chosung");
 
 const LINE_DATA_PATH = path.join(__dirname, "..", "data", "lineStations.json");
 
@@ -121,30 +121,41 @@ function stationExists(stationName) {
 }
 
 // 노선도 전체(약 300개 역)에서 이름으로 검색합니다. 환승역이면 역이 속한 노선(지선 포함)
-// 각각을 별도 항목으로 반환합니다. 경로 찾기 화면의 출발역/도착역 자동완성에 씁니다.
+// 각각을 별도 항목으로 반환합니다. 검색어가 "2호선"처럼 노선을 가리키면 역 이름 대신
+// 그 노선에 속하는지로 걸러서, 노선 순서대로 역 전체를 보여줍니다. 경로 찾기 화면의
+// 출발역/도착역 자동완성에 씁니다.
 function searchAllStations(query) {
   const graph = getGraph();
   if (!graph) return [];
+  const lineQuery = parseLineQuery(query);
   const results = [];
   graph.stationToLines.forEach((lines, name) => {
-    if (!matchesQuery(name, query)) return;
+    if (lineQuery) {
+      const onThisLine = [...lines].some((line) => line.split(" ")[0] === lineQuery);
+      if (!onThisLine) return;
+    } else if (!matchesQuery(name, query)) {
+      return;
+    }
     lines.forEach((line) => {
-      if (!line.includes(" ")) {
-        // 지선(예: "6호선 응암순환(단방향)")은 검색 결과에서는 본선 이름으로 보여준다.
-        results.push({ name, line });
-      } else {
-        results.push({ name, line: line.split(" ")[0] });
-      }
+      const base = line.split(" ")[0];
+      if (lineQuery && base !== lineQuery) return; // 지선 등 다른 노선 라벨은 제외
+      results.push({ name, line: base });
     });
   });
   // 같은 (name, line) 중복 제거
   const seen = new Set();
-  return results.filter((r) => {
+  const deduped = results.filter((r) => {
     const key = `${r.name}::${r.line}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+
+  if (lineQuery) {
+    const stations = getMainLineStations(lineQuery) || [];
+    deduped.sort((a, b) => stations.indexOf(a.name) - stations.indexOf(b.name));
+  }
+  return deduped;
 }
 
 // 다익스트라: origin역이 속한 모든 호선 노드를 시작점으로, destination역에 속한

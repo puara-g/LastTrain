@@ -1,12 +1,15 @@
 const express = require("express");
 const { findRoute, searchAllStations } = require("../services/routeFinder");
 const { computeDeadline } = require("../services/deadlineCalculator");
+const { parseLineQuery } = require("../utils/chosung");
 
 const router = express.Router();
 
 router.get("/all-stations", (req, res) => {
   const q = (req.query.q || "").trim();
-  const results = searchAllStations(q).slice(0, 20);
+  // "2호선"처럼 노선 전체를 보려는 검색이면 다 보여주고, 일반 이름 검색은 20개로 제한.
+  const limit = parseLineQuery(q) ? 100 : 20;
+  const results = searchAllStations(q).slice(0, limit);
   res.json({ results });
 });
 

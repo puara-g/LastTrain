@@ -27,4 +27,11 @@ function matchesQuery(name, query) {
   return toChosungString(name).includes(query);
 }
 
-module.exports = { toChosungString, matchesQuery };
+// 검색어가 "2", "2호선", "02호선"처럼 노선을 가리키면 "2호선" 형태로 정규화해서 돌려주고,
+// 아니면 null. 이걸로 "2호선"이라고 검색하면 그 노선의 역 전체가 뜨게 할 수 있다.
+function parseLineQuery(query) {
+  const match = query.trim().match(/^0?([1-9])(호선)?$/);
+  return match ? `${match[1]}호선` : null;
+}
+
+module.exports = { toChosungString, matchesQuery, parseLineQuery };
