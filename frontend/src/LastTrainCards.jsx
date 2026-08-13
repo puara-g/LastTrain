@@ -29,6 +29,7 @@ export default function LastTrainCards({ result, now }) {
           );
         }
         const target = resolveTargetDate(d.time, now);
+        const remainingMs = target.getTime() - now.getTime();
         return (
           <div className="card" key={d.label}>
             <p className="direction">
@@ -36,7 +37,7 @@ export default function LastTrainCards({ result, now }) {
               {d.destinationLabel && <span className="destination-tag">{d.destinationLabel}</span>}
             </p>
             <p className="time">{d.time}</p>
-            <p className="remaining">{formatRemaining(target.getTime() - now.getTime())}</p>
+            <p className={remainingMs <= 0 ? "remaining ended" : "remaining"}>{formatRemaining(remainingMs)}</p>
             {d.source === "estimated" && (
               <p className="note">
                 ⚠️ {d.basedOn.name}역 샘플 값 기준 {d.basedOn.hops}개 역 차이로 추정 (실제 시각 아님)

@@ -19,6 +19,7 @@ function LegOwnLastTrain({ legInfo, now }) {
 
   const time = legInfo.deadline || own.time;
   const target = resolveTargetDate(time, now);
+  const remainingMs = target.getTime() - now.getTime();
   const label =
     own.source === "official" && own.destination
       ? `${own.destination} 방면 마지노선`
@@ -30,8 +31,8 @@ function LegOwnLastTrain({ legInfo, now }) {
     <div className="leg-own-last-train">
       <div className="mini-card">
         <span>{label}</span>
-        <span>
-          {time} · {formatRemaining(target.getTime() - now.getTime())}
+        <span className={remainingMs <= 0 ? "ended" : ""}>
+          {time} · {formatRemaining(remainingMs)}
         </span>
       </div>
       {own.source === "sample" && <p className="note">⚠️ 샘플 데이터 (실제 시각 아님)</p>}
@@ -114,9 +115,14 @@ export default function RouteFinder({ now }) {
                 <>
                   <p className="deadline-label">환승 포함, 늦어도 이 시간까지 첫 구간을 타야 해요</p>
                   <p className="deadline-time">{deadline.deadline}</p>
-                  <p className="remaining">
-                    {formatRemaining(resolveTargetDate(deadline.deadline, now).getTime() - now.getTime())}
-                  </p>
+                  {(() => {
+                    const remainingMs = resolveTargetDate(deadline.deadline, now).getTime() - now.getTime();
+                    return (
+                      <p className={remainingMs <= 0 ? "remaining ended" : "remaining"}>
+                        {formatRemaining(remainingMs)}
+                      </p>
+                    );
+                  })()}
                   <p className="note">
                     기준 데이터: {SOURCE_LABEL[deadline.weakestSource]}
                     {deadline.weakestSource !== "official" && " (실제 시각과 다를 수 있어요)"}

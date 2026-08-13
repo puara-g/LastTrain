@@ -312,6 +312,11 @@ button.station-strip-side:hover {
   font-weight: 600;
 }
 
+.remaining.ended,
+.mini-card span.ended {
+  color: var(--warning-text);
+}
+
 .note {
   font-size: 12px;
   color: var(--text-faint);
