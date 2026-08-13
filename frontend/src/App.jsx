@@ -60,18 +60,32 @@ function SingleStationLookup({ now }) {
       {result && (
         <div className="result">
           <div className="station-strip">
-            <span className="station-strip-side station-strip-prev">
-              {result.prevStation && `← ${result.prevStation}`}
-            </span>
+            {result.prevStation ? (
+              <button
+                className="station-strip-side station-strip-prev"
+                onClick={() => setSelectedStation({ name: result.prevStation, line: result.line })}
+              >
+                ← {result.prevStation}
+              </button>
+            ) : (
+              <span className="station-strip-side station-strip-prev" />
+            )}
             <h2 className="result-title">
               <span className="line-badge" style={{ backgroundColor: getLineColor(result.line) }}>
                 {getLineNumber(result.line)}
               </span>
               {result.name} <span className="line-tag">{result.line}</span>
             </h2>
-            <span className="station-strip-side station-strip-next">
-              {result.nextStation && `${result.nextStation} →`}
-            </span>
+            {result.nextStation ? (
+              <button
+                className="station-strip-side station-strip-next"
+                onClick={() => setSelectedStation({ name: result.nextStation, line: result.line })}
+              >
+                {result.nextStation} →
+              </button>
+            ) : (
+              <span className="station-strip-side station-strip-next" />
+            )}
           </div>
           <p className="weekday-badge">
             적용 기준: {WEEKDAY_OPTIONS.find((o) => o.value === effectiveWeekdayType)?.label}

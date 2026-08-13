@@ -167,16 +167,28 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 4px;
+}
+
+button.station-strip-side {
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+button.station-strip-side:hover {
+  color: var(--accent);
+  background: var(--hover-bg);
 }
 
 .station-strip-prev {
   text-align: right;
-  padding-right: 4px;
 }
 
 .station-strip-next {
   text-align: left;
-  padding-left: 4px;
 }
 
 .result-title {
