@@ -17,26 +17,36 @@ router.get("/stations", (req, res) => {
 });
 
 // forward/backward 하나의 방향을 조회해서, 화면에 보여줄 라벨까지 붙여 돌려준다.
-async function buildDirectionResult(name, line, weekdayType, direction) {
+// 종착역 이름("신창 방면")은 그 역을 모르면 방향을 가늠하기 어렵다는 피드백이 있어서,
+// 이제는 바로 다음 정류장을 큰 라벨로 쓰고(nextStop, 누구나 바로 알아볼 수 있음),
+// 종착역 정보는 "OO행"이라는 작은 보조 텍스트(destinationLabel)로만 남긴다.
+async function buildDirectionResult(name, line, weekdayType, direction, nextStop) {
   const lookup = await lookupDirectional({ name, line, weekdayType, direction });
   const stations = getMainLineStations(line);
   const boundStation = stations ? (direction === "forward" ? stations[stations.length - 1] : stations[0]) : null;
-  const fallbackLabel = boundStation ? `${boundStation} 방면` : direction === "forward" ? "정방향" : "역방향";
+
+  const label = nextStop
+    ? `${nextStop} 방면`
+    : boundStation
+    ? `${boundStation} 방면`
+    : direction === "forward"
+    ? "정방향"
+    : "역방향";
 
   if (!lookup.available) {
-    return { label: fallbackLabel, time: null, note: lookup.reason };
+    return { label, time: null, note: lookup.reason };
   }
 
-  let label = fallbackLabel;
+  let destinationLabel = boundStation ? `${boundStation}행` : null;
   if (lookup.source === "official" && lookup.destination) {
-    label = `${lookup.destination} 방면`;
+    destinationLabel = `${lookup.destination}행`;
   } else if (lookup.source === "sample") {
     const mockStation = mockStations.find((s) => s.name === name && s.line === line);
     const dirEntry = mockStation?.directions.find((d) => d.dir === direction);
-    if (dirEntry?.label) label = dirEntry.label;
+    if (dirEntry?.label) destinationLabel = dirEntry.label;
   }
 
-  return { label, time: lookup.time, source: lookup.source, basedOn: lookup.basedOn };
+  return { label, destinationLabel, time: lookup.time, source: lookup.source, basedOn: lookup.basedOn };
 }
 
 // 특정 역의 막차 정보 조회 (표본 15개 역이 아니어도 역명 검색 API로 즉석 조회를 시도한다)
@@ -49,9 +59,15 @@ router.get("/last-train", async (req, res) => {
     return res.status(400).json({ error: "weekdayType은 weekday/saturday/sunday 중 하나여야 합니다." });
   }
 
+  const stations = getMainLineStations(line);
+  const stationIndex = stations ? stations.indexOf(name) : -1;
+  const prevStation = stationIndex > 0 ? stations[stationIndex - 1] : null;
+  const nextStation =
+    stationIndex !== -1 && stationIndex < (stations?.length ?? 0) - 1 ? stations[stationIndex + 1] : null;
+
   const [forward, backward] = await Promise.all([
-    buildDirectionResult(name, line, weekdayType, "forward"),
-    buildDirectionResult(name, line, weekdayType, "backward"),
+    buildDirectionResult(name, line, weekdayType, "forward", nextStation),
+    buildDirectionResult(name, line, weekdayType, "backward", prevStation),
   ]);
 
   if (!forward.time && !backward.time) {
@@ -59,12 +75,6 @@ router.get("/last-train", async (req, res) => {
       error: "이 역/노선은 표본 데이터가 없어 막차 시각을 추정할 수도 없습니다.",
     });
   }
-
-  const stations = getMainLineStations(line);
-  const stationIndex = stations ? stations.indexOf(name) : -1;
-  const prevStation = stationIndex > 0 ? stations[stationIndex - 1] : null;
-  const nextStation =
-    stationIndex !== -1 && stationIndex < (stations?.length ?? 0) - 1 ? stations[stationIndex + 1] : null;
 
   res.json({
     line,

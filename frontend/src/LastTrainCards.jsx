@@ -19,7 +19,10 @@ export default function LastTrainCards({ result, now }) {
         if (!d.time) {
           return (
             <div className="card" key={d.label}>
-              <p className="direction">{d.label}</p>
+              <p className="direction">
+                {d.label}
+                {d.destinationLabel && <span className="destination-tag">{d.destinationLabel}</span>}
+              </p>
               <p className="note">{d.note || "이 방향은 정보가 없어요."}</p>
               <QuickExitInfo name={result.name} line={result.line} direction={direction} />
             </div>
@@ -28,7 +31,10 @@ export default function LastTrainCards({ result, now }) {
         const target = resolveTargetDate(d.time, now);
         return (
           <div className="card" key={d.label}>
-            <p className="direction">{d.label}</p>
+            <p className="direction">
+              {d.label}
+              {d.destinationLabel && <span className="destination-tag">{d.destinationLabel}</span>}
+            </p>
             <p className="time">{d.time}</p>
             <p className="remaining">{formatRemaining(target.getTime() - now.getTime())}</p>
             {d.source === "estimated" && (
