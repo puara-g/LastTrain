@@ -60,10 +60,18 @@ router.get("/last-train", async (req, res) => {
     });
   }
 
+  const stations = getMainLineStations(line);
+  const stationIndex = stations ? stations.indexOf(name) : -1;
+  const prevStation = stationIndex > 0 ? stations[stationIndex - 1] : null;
+  const nextStation =
+    stationIndex !== -1 && stationIndex < (stations?.length ?? 0) - 1 ? stations[stationIndex + 1] : null;
+
   res.json({
     line,
     name,
     weekdayType,
+    prevStation,
+    nextStation,
     directions: [forward, backward],
   });
 });

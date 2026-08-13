@@ -153,9 +153,33 @@
   margin-left: 6px;
 }
 
+.station-strip {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.station-strip-side {
+  font-size: 13px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.station-strip-prev {
+  text-align: right;
+}
+
+.station-strip-next {
+  text-align: left;
+}
+
 .result-title {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
