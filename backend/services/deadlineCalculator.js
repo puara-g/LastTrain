@@ -9,7 +9,7 @@ function toExtendedMinutes(timeStr) {
   return h < 4 ? mins + 1440 : mins;
 }
 
-const SOURCE_RANK = { official: 3, sample: 2, estimated: 1 };
+const SOURCE_RANK = { official: 4, timetable: 3, sample: 2, estimated: 1 };
 
 // 환승을 포함한 전체 경로를, 도착지에 가장 가까운 구간부터 거꾸로 훑으며
 // "이 구간에서 이 시각까지는 타야 다음 연결(환승 또는 최종 도착)을 놓치지 않는다"를 계산합니다.

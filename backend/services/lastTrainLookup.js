@@ -1,4 +1,5 @@
 const mockStations = require("../data/mockStations");
+const timetableIndex = require("../data/timetableLastTrain.json");
 const seoulMetroApi = require("./seoulMetroApi");
 const { resolveExternalCode } = require("./stationCodeResolver");
 const { getMainLineStations } = require("./routeFinder");
@@ -77,6 +78,52 @@ async function lookupOfficialDynamic({ name, line, weekdayType, direction }) {
   return { available: false, reason: NO_TRAIN_REASON };
 }
 
+// backend/scripts/buildTimetable.js가 서울교통공사 "열차운행시각표" 원본 CSV(backend/data/*.csv)
+// 로 미리 만들어둔 실제 시각표 데이터. 15개 표본역(mockStations)의 weekday/weekend 값은
+// 더미이지만, 이 데이터는 실제 공개된 운행 스케줄이라 SEOUL_API_KEY가 없거나 실시간 API
+// 호출이 실패했을 때 표본/보간 추정보다 먼저 참고한다. 시각표 원본은 UP/DOWN(또는
+// IN/OUT) 같은 물리적 진행방향으로 기록돼 있어서, lookupOfficialDynamic과 동일하게
+// "그 방향 열차의 종착역이 lineStations.json 배열에서 앞/뒤 중 어디에 있는지"로
+// forward/backward를 판단한다.
+function lookupFromTimetable({ name, line, weekdayType, direction }) {
+  const lineNum = line.match(/^(\d+)호선/)?.[1];
+  if (!lineNum) return null;
+  const entries = timetableIndex[`${lineNum}호선`]?.[name];
+  if (!entries) return null;
+
+  const stations = getMainLineStations(line);
+  const stationIndex = stations ? stations.indexOf(name) : -1;
+  if (!stations || stationIndex === -1) return null;
+
+  // 같은 물리적 방향(UP/DOWN 등)이라도 분기역에서는 종착역이 갈릴 수 있어서, 종착역별
+  // 막차가 여러 건 있을 수 있다. 그중 요청한 forward/backward로 분류되는 것들 중
+  // 가장 늦은 시각을 고른다.
+  let best = null;
+  for (const rawDirection of Object.keys(entries)) {
+    const byDestination = entries[rawDirection]?.[weekdayType];
+    if (!byDestination) continue;
+    for (const [destination, time] of Object.entries(byDestination)) {
+      const destIndex = findStationIndex(stations, destination);
+      if (destIndex === -1) continue;
+      const classified = destIndex > stationIndex ? "forward" : "backward";
+      if (classified !== direction) continue;
+      // "00:xx"는 자정을 넘긴 같은 서비스일이라 "23:xx"보다 문자열로는 작아 보여도
+      // 실제로는 더 늦은 시각이다. 새벽 4시 이전은 24시간을 더해 비교해야 진짜
+      // 막차(가장 늦은 시각)를 고를 수 있다.
+      const extendedMinutes = timeToMinutes(time) + (Number(time.split(":")[0]) < 4 ? 1440 : 0);
+      if (!best || extendedMinutes > best.extendedMinutes) {
+        best = { time, destination, extendedMinutes };
+      }
+    }
+  }
+  if (best) {
+    return { available: true, time: best.time, source: "timetable", destination: best.destination };
+  }
+  // 이 역의 시각표 데이터 자체는 있는데, 요청한 방향으로 분류되는 열차가 하나도 없다면
+  // (예: 종점역에서 그 이상 진행하는 방향) 실제로 그 방향 운행이 없는 것으로 본다.
+  return { available: false, reason: NO_TRAIN_REASON };
+}
+
 // 특정 역+노선의 "한쪽 방향"(direction: "forward"|"backward" — lineStations.json 배열
 // 인덱스가 증가/감소하는 쪽) 막차를 조회합니다. official > sample > estimated 순으로 시도하고,
 // 어느 것도 안 되면 available:false를 돌려줍니다. 막차 시각 계산(구간별/환승 포함 마지노선
@@ -114,6 +161,10 @@ async function lookupDirectional({ name, line, weekdayType, direction }) {
       }
     }
 
+    // 실 API를 못 쓰거나 실패했으면, 더미인 표본값보다 실제 시각표 데이터를 먼저 참고한다.
+    const timetableResult = lookupFromTimetable({ name, line, weekdayType, direction });
+    if (timetableResult) return timetableResult;
+
     if (dirEntry.unavailable || !dirEntry[key]) {
       return { available: false, reason: NO_TRAIN_REASON };
     }
@@ -122,9 +173,14 @@ async function lookupDirectional({ name, line, weekdayType, direction }) {
 
   // 표본 15개 역에 없는 역: 우선 역명 검색 API로 코드를 찾아 공식 API를 직접 호출해본다.
   // 이러면 표본에 없는 역도 진짜 데이터를 받을 수 있다. 실패할 때만(코드 못 찾음, 그
-  // 방향 판단 불가 등) 아래의 "가까운 표본역 기준 보간"으로 넘어간다.
+  // 방향 판단 불가 등) 아래로 넘어간다.
   const dynamicOfficial = await lookupOfficialDynamic({ name, line, weekdayType, direction });
   if (dynamicOfficial) return dynamicOfficial;
+
+  // 실 API로도 안 되면, 다음으로는 실제 시각표 데이터를 참고한다. 그마저 이 역/노선
+  // 데이터가 없을 때만(이름 매칭 실패 등) 가까운 표본역 기준 보간으로 넘어간다.
+  const timetableResult = lookupFromTimetable({ name, line, weekdayType, direction });
+  if (timetableResult) return timetableResult;
 
   const stations = getMainLineStations(line);
   if (!stations) return { available: false, reason: "이 노선은 표본 데이터가 없어요." };

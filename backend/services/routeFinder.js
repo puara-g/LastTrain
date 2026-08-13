@@ -3,8 +3,18 @@ const path = require("path");
 const { getTransferMinutes } = require("../data/transferTimes");
 const { AVG_MINUTES_PER_STOP } = require("../data/estimate");
 const { matchesQuery, parseLineQuery } = require("../utils/chosung");
+const segmentTravelTimes = require("../data/segmentTravelTimes.json");
 
 const LINE_DATA_PATH = path.join(__dirname, "..", "data", "lineStations.json");
+
+// backend/scripts/buildTimetable.js가 실제 열차운행시각표에서 뽑아낸, 바로 옆 역까지의
+// 실측 이동시간(분)이다. 데이터가 없는 구간(신규 구간 등 극히 일부)만 역당 평균값으로
+// 대체한다.
+function getSegmentMinutes(lineLabel, from, to) {
+  const lineNum = lineLabel.match(/^(\d+)호선/)?.[1];
+  const minutes = lineNum && segmentTravelTimes[`${lineNum}호선`]?.[`${from}::${to}`];
+  return minutes ?? AVG_MINUTES_PER_STOP;
+}
 
 // 노선 간 환승은 정차역 몇 개를 더 타는 것과 비슷한 "번거로움"으로 취급해 경로 탐색 시
 // 불필요한 환승을 피하도록 하는 가중치입니다. 실제 소요시간(분)이 아니라 경로 우선순위를
@@ -256,13 +266,17 @@ function findRoute(originStation, destinationStation) {
 
   const legResults = legs.map((leg) => {
     const stopCount = leg.stations.length - 1;
+    let estimatedMinutes = 0;
+    for (let i = 0; i < leg.stations.length - 1; i++) {
+      estimatedMinutes += getSegmentMinutes(leg.line, leg.stations[i], leg.stations[i + 1]);
+    }
     return {
       line: leg.line,
       from: leg.stations[0],
       to: leg.stations[leg.stations.length - 1],
       stopCount,
       stations: leg.stations,
-      estimatedMinutes: Math.round(stopCount * AVG_MINUTES_PER_STOP),
+      estimatedMinutes: Math.round(estimatedMinutes),
     };
   });
 

@@ -39,7 +39,7 @@ async function buildDirectionResult(name, line, weekdayType, direction, nextStop
   }
 
   let destinationLabel = boundStation ? `${boundStation}행` : null;
-  if (lookup.source === "official" && lookup.destination) {
+  if (lookup.destination) {
     destinationLabel = `${lookup.destination}행`;
   } else if (lookup.source === "sample") {
     const mockStation = mockStations.find((s) => s.name === name && s.line === line);
