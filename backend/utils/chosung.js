@@ -27,11 +27,19 @@ function matchesQuery(name, query) {
   return toChosungString(name).includes(query);
 }
 
+// 숫자가 아닌 이름을 쓰는 노선들("2호선"처럼 숫자+호선 패턴이 아닌 노선). 새 노선이
+// lineStations.json에 추가되면 여기에도 이름을 더해야 "경의중앙선"처럼 노선명 그대로
+// 검색했을 때 전체 역이 나온다.
+const NAMED_LINES = ["경의중앙선", "공항철도"];
+
 // 검색어가 "2", "2호선", "02호선"처럼 노선을 가리키면 "2호선" 형태로 정규화해서 돌려주고,
-// 아니면 null. 이걸로 "2호선"이라고 검색하면 그 노선의 역 전체가 뜨게 할 수 있다.
+// "경의중앙선"/"공항철도"처럼 노선명 자체를 그대로 쳐도 그 노선으로 인식한다. 둘 다
+// 아니면 null. 이걸로 노선명을 검색하면 그 노선의 역 전체가 뜨게 할 수 있다.
 function parseLineQuery(query) {
-  const match = query.trim().match(/^0?([1-9])(호선)?$/);
-  return match ? `${match[1]}호선` : null;
+  const trimmed = query.trim();
+  const match = trimmed.match(/^0?([1-9])(호선)?$/);
+  if (match) return `${match[1]}호선`;
+  return NAMED_LINES.includes(trimmed) ? trimmed : null;
 }
 
 module.exports = { toChosungString, matchesQuery, parseLineQuery };

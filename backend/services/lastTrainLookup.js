@@ -51,6 +51,10 @@ async function lookupOfficialDynamic({ name, line, weekdayType, direction }) {
     if (!result) return null;
     const destIndex = findStationIndex(stations, result.destination);
     if (destIndex === -1) return null; // 종착역이 이 배열 밖(코레일 직결 구간 등)이면 판단 불가
+    // "단방향" 지선(예: 6호선 응암순환)은 배열 첫 역과 마지막 역이 같은 이름이라
+    // indexOf가 항상 0번을 찾아, 종점 도착 열차(유일한 정방향)를 역방향으로 잘못
+    // 분류한다. 이런 지선엔 애초에 역방향이 없으니 무조건 정방향으로 취급한다.
+    if (line.includes("단방향")) return "forward";
     return destIndex > stationIndex ? "forward" : "backward";
   }
 
@@ -70,12 +74,12 @@ async function lookupOfficialDynamic({ name, line, weekdayType, direction }) {
   const downDir = classify(down);
   if (upDir === direction) return { available: true, time: up.time, source: "official", destination: up.destination };
   if (downDir === direction) return { available: true, time: down.time, source: "official", destination: down.destination };
-  if (up === null && down === null) {
-    // 두 방향 다 데이터가 없음 → 이 역 자체에 이 API 데이터가 없는 것으로 보고 추정으로 폴백
-    return null;
-  }
-  // 데이터는 있는데 방향 판단이 안 되거나(종착역이 배열 밖) 요청한 방향과 안 맞는 경우
-  return { available: false, reason: NO_TRAIN_REASON };
+  // 요청한 방향과 확실히 일치하는 결과가 없다고 해서 "이 방향엔 열차가 없다"고 단정하지
+  // 않는다. classify()가 null을 주는 건 데이터가 없는 경우 말고도 종착역이 지선에 있어
+  // 판단이 안 되는 경우도 있는데(예: 성수역 하행이 성수지선 종점행), 후자는 실제로는
+  // 운행 중이다. 여기서 성급히 확정하면 진짜 데이터가 있는 timetable 폴백을 못 쓰게
+  // 되므로, 판단 불가일 땐 null을 돌려줘서 다음 폴백이 이어받게 한다.
+  return null;
 }
 
 // backend/scripts/buildTimetable.js가 서울교통공사 "열차운행시각표" 원본 CSV(backend/data/*.csv)
@@ -86,9 +90,11 @@ async function lookupOfficialDynamic({ name, line, weekdayType, direction }) {
 // "그 방향 열차의 종착역이 lineStations.json 배열에서 앞/뒤 중 어디에 있는지"로
 // forward/backward를 판단한다.
 function lookupFromTimetable({ name, line, weekdayType, direction }) {
-  const lineNum = line.match(/^(\d+)호선/)?.[1];
-  if (!lineNum) return null;
-  const entries = timetableIndex[`${lineNum}호선`]?.[name];
+  // line은 지선이면 "5호선 마천지선"처럼 본선명 뒤에 지선명이 붙어있을 수 있는데,
+  // timetableLastTrain.json은 지선 역도 본선 키 밑에 함께 저장돼 있으므로(같은 CSV
+  // "호선" 컬럼을 공유) 본선명만 떼어서 찾아야 한다.
+  const baseLine = line.split(" ")[0];
+  const entries = timetableIndex[baseLine]?.[name];
   if (!entries) return null;
 
   const stations = getMainLineStations(line);
@@ -105,7 +111,8 @@ function lookupFromTimetable({ name, line, weekdayType, direction }) {
     for (const [destination, time] of Object.entries(byDestination)) {
       const destIndex = findStationIndex(stations, destination);
       if (destIndex === -1) continue;
-      const classified = destIndex > stationIndex ? "forward" : "backward";
+      // "단방향" 지선은 위치 비교 대신 무조건 정방향으로 분류한다(이유는 classify() 참고).
+      const classified = line.includes("단방향") ? "forward" : destIndex > stationIndex ? "forward" : "backward";
       if (classified !== direction) continue;
       // "00:xx"는 자정을 넘긴 같은 서비스일이라 "23:xx"보다 문자열로는 작아 보여도
       // 실제로는 더 늦은 시각이다. 새벽 4시 이전은 24시간을 더해 비교해야 진짜
@@ -129,6 +136,14 @@ function lookupFromTimetable({ name, line, weekdayType, direction }) {
 // 어느 것도 안 되면 available:false를 돌려줍니다. 막차 시각 계산(구간별/환승 포함 마지노선
 // 계산)에 재사용하기 위해 routes/lastTrain.js와는 별도의 내부 서비스로 뺐습니다.
 async function lookupDirectional({ name, line, weekdayType, direction }) {
+  // "6호선 응암순환(단방향)"처럼 이름에 "단방향"이 붙은 지선은 실제로 정방향으로만
+  // 운행한다(routeFinder.js의 그래프도 이 방향으로만 간선을 만든다). backward는
+  // 애초에 존재할 수 없으므로, 아래 자동 분류 로직(classify 참고)까지 갈 것도 없이
+  // 여기서 먼저 걸러낸다.
+  if (direction === "backward" && line.includes("단방향")) {
+    return { available: false, reason: NO_TRAIN_REASON };
+  }
+
   const key = weekdayType === "weekday" ? "weekday" : "weekend";
   const station = mockStations.find((s) => s.name === name && s.line === line);
 
@@ -161,11 +176,17 @@ async function lookupDirectional({ name, line, weekdayType, direction }) {
       }
     }
 
+    // 손으로 검증해서 "이 방향은 물리적으로 열차가 없다"고 표시해둔 역은 시각표 자동
+    // 분류보다 이 값을 더 신뢰한다(자동 분류가 오판할 수 있는 이유는 classify() 참고).
+    if (dirEntry.unavailable) {
+      return { available: false, reason: NO_TRAIN_REASON };
+    }
+
     // 실 API를 못 쓰거나 실패했으면, 더미인 표본값보다 실제 시각표 데이터를 먼저 참고한다.
     const timetableResult = lookupFromTimetable({ name, line, weekdayType, direction });
     if (timetableResult) return timetableResult;
 
-    if (dirEntry.unavailable || !dirEntry[key]) {
+    if (!dirEntry[key]) {
       return { available: false, reason: NO_TRAIN_REASON };
     }
     return { available: true, time: dirEntry[key], source: "sample" };

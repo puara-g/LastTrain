@@ -1,5 +1,7 @@
-// backend/data/*.csv (서울교통공사 "서울 도시철도 열차운행시각표" 원본, CP949 인코딩)를
-// 읽어서 두 가지 결과물을 만든다.
+// backend/data/*.csv (서울교통공사 "서울 도시철도 열차운행시각표" 원본과, 레일포털
+// (data.kric.go.kr)의 "전국도시철도운행정보표준데이터"에서 경의중앙선/공항철도 구간만
+// 추출해 동일한 12컬럼 포맷으로 맞춘 파일, 둘 다 CP949 인코딩)를 읽어서 두 가지
+// 결과물을 만든다.
 //
 // 1. backend/data/timetableLastTrain.json — "역+방향+요일유형별 막차 시각" 인덱스.
 //    SEOUL_API_KEY가 없거나 API 호출이 실패했을 때, 15개 표본역 기준 추정치 대신 이
@@ -33,17 +35,25 @@ const DAY_CODE_MAP = { DAY: "weekday", SAT: "saturday", END: "sunday" };
 const MIN_SEGMENT_MINUTES = 1;
 const MAX_SEGMENT_MINUTES = 15;
 
-// 호선번호(1~9)별로 "이 CSV 역명이 실제로 무슨 역인지" 판단할 후보 역명 목록(본선+지선
-// 전부)을 만든다. CSV 역명은 lineStations.json 표기와 괄호 유무가 다를 수 있다
-// (예: "불암산" vs "불암산(당고개)", "이수" vs "총신대입구(이수)").
+// CSV의 "호선" 컬럼 값(예: 서울교통공사 CSV는 "1".."9", 경의중앙선/공항철도 CSV는 노선명
+// 그대로 "경의중앙선"/"공항철도")과 최종 결과 파일의 키("1호선".."9호선" 또는
+// "경의중앙선"/"공항철도")를 서로 변환한다. 숫자만 있으면 "호선"을 붙이고, 아니면
+// (이미 완전한 노선명이므로) 그대로 쓴다.
+function lineKeyFromCsvValue(rawLineValue) {
+  return /^\d+$/.test(rawLineValue) ? `${rawLineValue}호선` : rawLineValue;
+}
+
+// 호선(1~9호선, 경의중앙선, 공항철도 등)별로 "이 CSV 역명이 실제로 무슨 역인지" 판단할
+// 후보 역명 목록(본선+지선 전부)을 만든다. CSV 역명은 lineStations.json 표기와 괄호
+// 유무가 다를 수 있다(예: "불암산" vs "불암산(당고개)", "이수" vs "총신대입구(이수)").
 function buildCandidatesByLineNum() {
-  const map = new Map(); // lineNum(string) -> Set(canonical station names)
+  const map = new Map(); // lineKey(string, "1".."9" 또는 전체 노선명) -> Set(canonical station names)
   lineStations.forEach((entry) => {
     const lineNum = entry.line.match(/^(\d+)호선/)?.[1];
-    if (!lineNum) return;
-    if (!map.has(lineNum)) map.set(lineNum, new Set());
-    entry.stations.forEach((s) => map.get(lineNum).add(s));
-    (entry.branches || []).forEach((b) => b.stations.forEach((s) => map.get(lineNum).add(s)));
+    const key = lineNum || entry.line;
+    if (!map.has(key)) map.set(key, new Set());
+    entry.stations.forEach((s) => map.get(key).add(s));
+    (entry.branches || []).forEach((b) => b.stations.forEach((s) => map.get(key).add(s)));
   });
   return map;
 }
@@ -64,9 +74,9 @@ function buildAdjacentPairsByLineNum() {
   }
   lineStations.forEach((entry) => {
     const lineNum = entry.line.match(/^(\d+)호선/)?.[1];
-    if (!lineNum) return;
-    if (!map.has(lineNum)) map.set(lineNum, new Set());
-    const set = map.get(lineNum);
+    const key = lineNum || entry.line;
+    if (!map.has(key)) map.set(key, new Set());
+    const set = map.get(key);
     addPairs(set, entry.stations, entry.type === "loop");
     (entry.branches || []).forEach((b) => addPairs(set, b.stations, false));
   });
@@ -149,7 +159,7 @@ function buildLastTrainIndex(allRows, candidatesByLineNum) {
     const canonicalName = resolveCanonicalName(candidates, row.stationName);
     if (!canonicalName) {
       skippedUnresolved++;
-      unresolvedNames.add(`${row.lineNum}호선:${row.stationName}`);
+      unresolvedNames.add(`${lineKeyFromCsvValue(row.lineNum)}:${row.stationName}`);
       continue;
     }
 
@@ -159,7 +169,7 @@ function buildLastTrainIndex(allRows, candidatesByLineNum) {
     // 다른 종착역(본선 계속 vs 지선 진입)으로 갈라지는 경우가 있다. 시각이 가장 늦은
     // 딱 한 건만 남기면 그중 하나의 종착역 정보가 통째로 사라지므로, 종착역별로
     // 각각의 막차를 따로 남긴다.
-    const lineKey = `${row.lineNum}호선`;
+    const lineKey = lineKeyFromCsvValue(row.lineNum);
     index[lineKey] ??= {};
     index[lineKey][canonicalName] ??= {};
     index[lineKey][canonicalName][row.direction] ??= {};
@@ -239,7 +249,7 @@ function buildSegmentTimes(allRows, candidatesByLineNum, adjacentPairsByLineNum)
   let pairCount = 0;
   for (const [pairKey, samples] of samplesByPair) {
     const [lineNum, from, to] = pairKey.split("::");
-    const lineKey = `${lineNum}호선`;
+    const lineKey = lineKeyFromCsvValue(lineNum);
     segmentTimes[lineKey] ??= {};
     segmentTimes[lineKey][`${from}::${to}`] = Math.round(median(samples) * 10) / 10;
     pairCount++;
@@ -251,7 +261,9 @@ function buildSegmentTimes(allRows, candidatesByLineNum, adjacentPairsByLineNum)
 function main() {
   const candidatesByLineNum = buildCandidatesByLineNum();
   const adjacentPairsByLineNum = buildAdjacentPairsByLineNum();
-  const files = fs.readdirSync(DATA_DIR).filter((f) => f.endsWith(".csv") && f.includes("호선"));
+  // "[1호선]...", "[경의중앙선]..." 처럼 대괄호로 노선을 표시한 열차운행시각표 원본만
+  // 대상으로 한다("...환승역거리 소요시간 정보..." 같은 다른 종류의 CSV는 제외).
+  const files = fs.readdirSync(DATA_DIR).filter((f) => f.endsWith(".csv") && f.startsWith("["));
 
   const allRows = files.flatMap((file) => parseCsv(path.join(DATA_DIR, file)));
 

@@ -14,6 +14,9 @@ router.get("/stations", (req, res) => {
   const results = mockStations
     .filter((s) => (lineQuery ? s.line === lineQuery : matchesQuery(s.name, q)))
     .map((s) => ({ name: s.name, line: s.line }));
+  if (!lineQuery) {
+    results.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  }
   res.json({ results });
 });
 

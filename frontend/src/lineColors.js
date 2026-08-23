@@ -9,6 +9,8 @@ export const LINE_COLORS = {
   "7호선": "#747F00",
   "8호선": "#E6186C",
   "9호선": "#BDB092",
+  "경의중앙선": "#77C4A3",
+  "공항철도": "#0090D2",
 };
 
 // leg.line은 "6호선 응암순환(단방향)"처럼 지선이 붙어있을 수 있어서 본선 이름만 뗀다.
@@ -30,8 +32,10 @@ export function getLineTint(line, alpha = 0.08) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// "2호선" -> "2", "6호선 응암순환(단방향)" -> "6" (실제 노선도 원형 배지에 쓰는 숫자만).
+// "2호선" -> "2", "6호선 응암순환(단방향)" -> "6"처럼 원형 배지에 쓸 짧은 라벨을 만든다.
+// 경의중앙선/공항철도처럼 숫자가 없는 노선은 앞 두 글자("경의", "공항")를 대신 쓴다.
 export function getLineNumber(line) {
-  const match = baseLine(line).match(/\d+/);
-  return match ? match[0] : "?";
+  const base = baseLine(line);
+  const match = base.match(/\d+/);
+  return match ? match[0] : base.slice(0, 2);
 }

@@ -36,8 +36,23 @@ export default function LastTrainCards({ result, now }) {
               {d.label}
               {d.destinationLabel && <span className="destination-tag">{d.destinationLabel}</span>}
             </p>
-            <p className="time">{d.time}</p>
-            <p className={remainingMs <= 0 ? "remaining ended" : "remaining"}>{formatRemaining(remainingMs)}</p>
+            {(() => {
+              const timeP = <p className="time">{d.time}</p>;
+              const remainingP = (
+                <p className={remainingMs <= 0 ? "remaining ended" : "remaining"}>{formatRemaining(remainingMs)}</p>
+              );
+              return remainingMs <= 0 ? (
+                <>
+                  {remainingP}
+                  {timeP}
+                </>
+              ) : (
+                <>
+                  {timeP}
+                  {remainingP}
+                </>
+              );
+            })()}
             {d.source === "estimated" && (
               <p className="note">
                 ⚠️ {d.basedOn.name}역 샘플 값 기준 {d.basedOn.hops}개 역 차이로 추정 (실제 시각 아님)

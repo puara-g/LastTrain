@@ -28,6 +28,12 @@ export async function searchAllStations(query) {
   return data.results;
 }
 
+export async function getLineDiagram(line) {
+  const res = await fetch(`${API_BASE}/api/line-map?line=${encodeURIComponent(line)}`);
+  if (!res.ok) throw new Error("노선도 정보를 불러오지 못했습니다.");
+  return res.json();
+}
+
 export async function getQuickExit({ name, line, direction }) {
   const params = new URLSearchParams({ name, line });
   if (direction) params.set("direction", direction);

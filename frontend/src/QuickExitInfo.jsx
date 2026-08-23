@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getQuickExit } from "./api";
+import DoorIcon from "./DoorIcon";
 
 // 문번호들을 승강설비 종류별로 묶는다: { "에스컬레이터": ["2-3","2-2"], ... }
 function groupByFacility(spots) {
@@ -40,7 +41,9 @@ export default function QuickExitInfo({ name, line, direction }) {
 
   return (
     <div className="quick-exit">
-      <p className="note quick-exit-title">🚪 빠른하차 정보</p>
+      <p className="note quick-exit-title">
+        <DoorIcon /> 빠른하차 정보
+      </p>
       {entries.map(([dirLabel, info]) => {
         const groups = groupByFacility(info.spots);
         const facilities = FACILITY_ORDER.filter((f) => groups[f]);

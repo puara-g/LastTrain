@@ -3,8 +3,9 @@ import { getLastTrain, searchAllStations } from "./api";
 import StationPicker from "./StationPicker";
 import RouteFinder from "./RouteFinder";
 import LastTrainCards from "./LastTrainCards";
+import LineMapPicker from "./LineMapPicker";
+import LineBadge from "./LineBadge";
 import { WEEKDAY_OPTIONS, detectWeekdayType } from "./weekday";
-import { getLineColor, getLineNumber } from "./lineColors";
 import "./App.css";
 
 function SingleStationLookup({ now }) {
@@ -54,6 +55,8 @@ function SingleStationLookup({ now }) {
         ))}
       </div>
 
+      <LineMapPicker onSelect={setSelectedStation} />
+
       {loading && <p className="status">불러오는 중...</p>}
       {error && <p className="status error">{error}</p>}
 
@@ -71,10 +74,8 @@ function SingleStationLookup({ now }) {
               <span className="station-strip-side station-strip-prev" />
             )}
             <h2 className="result-title">
-              <span className="line-badge" style={{ backgroundColor: getLineColor(result.line) }}>
-                {getLineNumber(result.line)}
-              </span>
-              {result.name} <span className="line-tag">{result.line}</span>
+              <LineBadge line={result.line} />
+              <span className="result-title-name">{result.name}</span> <span className="line-tag">{result.line}</span>
             </h2>
             {result.nextStation ? (
               <button

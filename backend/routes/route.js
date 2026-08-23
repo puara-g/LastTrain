@@ -1,5 +1,5 @@
 const express = require("express");
-const { findRoute, searchAllStations } = require("../services/routeFinder");
+const { findRoute, searchAllStations, getLineDiagram } = require("../services/routeFinder");
 const { computeDeadline } = require("../services/deadlineCalculator");
 const { parseLineQuery } = require("../utils/chosung");
 
@@ -11,6 +11,20 @@ router.get("/all-stations", (req, res) => {
   const limit = parseLineQuery(q) ? 100 : 20;
   const results = searchAllStations(q).slice(0, limit);
   res.json({ results });
+});
+
+// LineMapPicker(노선도로 역 고르기) 전용: 지선이 어느 역에서 갈라지는지, 순환선인지까지
+// 함께 내려준다. 일반 자동완성용 /all-stations와 달리 노선 하나만 받는다.
+router.get("/line-map", (req, res) => {
+  const line = parseLineQuery((req.query.line || "").trim());
+  if (!line) {
+    return res.status(400).json({ error: "line 파라미터가 올바른 노선명이 아니에요." });
+  }
+  const diagram = getLineDiagram(line);
+  if (!diagram) {
+    return res.status(404).json({ error: "이 노선 정보를 찾을 수 없어요." });
+  }
+  res.json(diagram);
 });
 
 router.get("/route", async (req, res) => {

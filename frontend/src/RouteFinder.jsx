@@ -3,9 +3,8 @@ import StationPicker from "./StationPicker";
 import QuickExitInfo from "./QuickExitInfo";
 import { getRoute, searchAllStations } from "./api";
 import { WEEKDAY_OPTIONS, detectWeekdayType, resolveTargetDate, formatRemaining } from "./weekday";
-import { getLineColor, getLineNumber } from "./lineColors";
-
-const SOURCE_LABEL = { official: "공식 데이터", sample: "샘플 데이터", estimated: "추정치" };
+import WalkIcon from "./WalkIcon";
+import LineBadge from "./LineBadge";
 
 // 이 구간이 실제로 향하는 "그 방향"의 마지노선(=사실상 막차 시각)만 보여준다.
 // "이 구간 마지노선"을 별도 줄로 또 적지 않고, 표시하는 시각 자체가 곧 마지노선이 되도록
@@ -112,22 +111,32 @@ export default function RouteFinder({ now }) {
           {deadline && (
             <div className={`deadline-box ${deadline.reachable ? "" : "unreachable"}`}>
               {deadline.reachable ? (
-                <>
-                  <p className="deadline-label">환승 포함, 늦어도 이 시간까지 첫 구간을 타야 해요</p>
-                  <p className="deadline-time">{deadline.deadline}</p>
-                  {(() => {
-                    const remainingMs = resolveTargetDate(deadline.deadline, now).getTime() - now.getTime();
-                    return (
-                      <p className={remainingMs <= 0 ? "remaining ended" : "remaining"}>
-                        {formatRemaining(remainingMs)}
-                      </p>
-                    );
-                  })()}
-                  <p className="note">
-                    기준 데이터: {SOURCE_LABEL[deadline.weakestSource]}
-                    {deadline.weakestSource !== "official" && " (실제 시각과 다를 수 있어요)"}
-                  </p>
-                </>
+                (() => {
+                  const remainingMs = resolveTargetDate(deadline.deadline, now).getTime() - now.getTime();
+                  const timeP = <p className="deadline-time">{deadline.deadline}</p>;
+                  const remainingP = (
+                    <p className={remainingMs <= 0 ? "remaining ended" : "remaining"}>
+                      {formatRemaining(remainingMs)}
+                    </p>
+                  );
+                  // 막차가 끝났으면 "오늘 막차는 끝났어요"가 먼저 보이도록 순서를 뒤집는다.
+                  return (
+                    <>
+                      <p className="deadline-label">환승 포함, 늦어도 이 시간까지 첫 구간을 타야 해요</p>
+                      {remainingMs <= 0 ? (
+                        <>
+                          {remainingP}
+                          {timeP}
+                        </>
+                      ) : (
+                        <>
+                          {timeP}
+                          {remainingP}
+                        </>
+                      )}
+                    </>
+                  );
+                })()
               ) : (
                 <p className="note">⚠️ 전체 마지노선을 계산할 수 없어요: {deadline.reason}</p>
               )}
@@ -140,9 +149,7 @@ export default function RouteFinder({ now }) {
               <div key={idx}>
                 <div className="card leg-card">
                   <p className="direction leg-direction">
-                    <span className="line-badge" style={{ backgroundColor: getLineColor(leg.line) }}>
-                      {getLineNumber(leg.line)}
-                    </span>
+                    <LineBadge line={leg.line} />
                     {idx === 0 ? `${leg.line} 타기` : `${leg.line}으로 환승`}
                   </p>
                   <p className="time route-leg">
@@ -157,7 +164,7 @@ export default function RouteFinder({ now }) {
                 {idx < route.transferStations.length && (
                   <div className="transfer-chip-wrap">
                     <div className="transfer-chip">
-                      <span className="transfer-chip-icon">🔁</span>
+                      <WalkIcon />
                       <span className="transfer-chip-station">{route.transferStations[idx]}</span>
                       <span className="transfer-chip-dot">·</span>
                       <span className="transfer-chip-walk">

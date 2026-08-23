@@ -11,8 +11,10 @@ const LINE_DATA_PATH = path.join(__dirname, "..", "data", "lineStations.json");
 // 실측 이동시간(분)이다. 데이터가 없는 구간(신규 구간 등 극히 일부)만 역당 평균값으로
 // 대체한다.
 function getSegmentMinutes(lineLabel, from, to) {
-  const lineNum = lineLabel.match(/^(\d+)호선/)?.[1];
-  const minutes = lineNum && segmentTravelTimes[`${lineNum}호선`]?.[`${from}::${to}`];
+  // lineLabel은 지선이면 "6호선 응암순환(단방향)"처럼 본선명 뒤에 지선명이 붙어있을 수
+  // 있는데, segmentTravelTimes.json은 본선 단위로만 키가 있으므로 앞부분만 뗀다.
+  const baseLine = lineLabel.split(" ")[0];
+  const minutes = segmentTravelTimes[baseLine]?.[`${from}::${to}`];
   return minutes ?? AVG_MINUTES_PER_STOP;
 }
 
@@ -124,6 +126,52 @@ function getMainLineStations(lineLabel) {
   return null;
 }
 
+// "2호선" 같은 노선명을 검색했을 때 역 전체를 보여줄 순서를 정한다. 본선 역은 배열
+// 순서 그대로 두고, 지선 역(예: 성수지선의 용답·신답·용두·신설동)은 갈라지는 역(분기역,
+// 지선 배열의 첫 역) 바로 뒤에 지선 내부 순서대로 끼워 넣는다. 그래야 실제 노선도처럼
+// "본선을 타고 가다가 분기역에서 지선이 갈라지는" 순서로 자연스럽게 보인다.
+function buildLineStationOrder(lineLabel) {
+  const lineData = loadLineData();
+  const entry = lineData?.find((e) => e.line === lineLabel);
+  if (!entry) return new Map();
+
+  const order = new Map();
+  entry.stations.forEach((s, i) => order.set(s, i));
+  (entry.branches || []).forEach((branch) => {
+    const junctionPos = order.get(branch.stations[0]) ?? entry.stations.length;
+    branch.stations.forEach((s, i) => {
+      if (i === 0 || order.has(s)) return; // 분기역 자신, 이미 자리가 있는 역은 건너뜀
+      order.set(s, junctionPos + i / 1000); // 분기역 바로 뒤, 지선 내부 순서 유지
+    });
+  });
+  return order;
+}
+
+// LineMapPicker(프론트) 전용: buildLineStationOrder와 같은 순서로 역을 배치하되, 화면에
+// 바로 그릴 수 있게 각 역이 본선인지 어느 지선인지, 그리고 순환선이라 마지막 역이 첫
+// 역으로 다시 이어지는지까지 함께 돌려준다.
+function getLineDiagram(lineLabel) {
+  const lineData = loadLineData();
+  const entry = lineData?.find((e) => e.line === lineLabel);
+  if (!entry) return null;
+
+  const stations = entry.stations.map((name) => ({ name, branch: null }));
+  const seen = new Set(entry.stations);
+  (entry.branches || []).forEach((branch) => {
+    const junctionIndex = stations.findIndex((s) => s.name === branch.stations[0]);
+    if (junctionIndex === -1) return;
+    const toInsert = branch.stations
+      .filter((name, i) => i > 0 && !seen.has(name))
+      .map((name) => {
+        seen.add(name);
+        return { name, branch: branch.name };
+      });
+    stations.splice(junctionIndex + 1, 0, ...toInsert);
+  });
+
+  return { stations, loop: entry.type === "loop" };
+}
+
 function stationExists(stationName) {
   const graph = getGraph();
   if (!graph) return false;
@@ -149,7 +197,11 @@ function searchAllStations(query) {
     lines.forEach((line) => {
       const base = line.split(" ")[0];
       if (lineQuery && base !== lineQuery) return; // 지선 등 다른 노선 라벨은 제외
-      results.push({ name, line: base });
+      // 본선에도 있는 역(분기역 자신 등)은 본선 라벨을 쓰고, 지선에만 있는 역(예:
+      // 성수지선의 용답)은 지선 전체 라벨을 그대로 써야 막차 조회에서 그 역을 올바른
+      // 배열(지선)에서 찾아 방향을 판별할 수 있다.
+      const effectiveLine = lines.has(base) ? base : line;
+      results.push({ name, line: effectiveLine });
     });
   });
   // 같은 (name, line) 중복 제거
@@ -162,8 +214,10 @@ function searchAllStations(query) {
   });
 
   if (lineQuery) {
-    const stations = getMainLineStations(lineQuery) || [];
-    deduped.sort((a, b) => stations.indexOf(a.name) - stations.indexOf(b.name));
+    const order = buildLineStationOrder(lineQuery);
+    deduped.sort((a, b) => (order.get(a.name) ?? Infinity) - (order.get(b.name) ?? Infinity));
+  } else {
+    deduped.sort((a, b) => a.name.localeCompare(b.name, "ko"));
   }
   return deduped;
 }
@@ -292,4 +346,4 @@ function findRoute(originStation, destinationStation) {
   };
 }
 
-module.exports = { findRoute, stationExists, searchAllStations, getGraph, getMainLineStations };
+module.exports = { findRoute, stationExists, searchAllStations, getGraph, getMainLineStations, getLineDiagram };

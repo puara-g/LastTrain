@@ -198,6 +198,10 @@ button.station-strip-side:hover {
   gap: 10px;
 }
 
+.result-title-name {
+  font-weight: 800;
+}
+
 .weekday-select {
   display: flex;
   gap: 6px;
@@ -222,6 +226,148 @@ button.station-strip-side:hover {
   background: var(--pill-bg);
   color: var(--pill-text);
   border-color: var(--pill-bg);
+}
+
+.line-map-picker {
+  margin: 0 0 20px;
+}
+
+.line-map-line-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.line-map-line-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+/* "경의", "공항"처럼 두 글자짜리 라벨은 32px 원 안에서 12px 폰트가 그대로 들어가면
+   잘려 보여서 글자 수에 따라 폰트 크기를 줄인다. */
+.line-map-line-btn.two-chars {
+  font-size: 9px;
+  letter-spacing: -0.5px;
+}
+
+.line-map-line-btn:hover {
+  opacity: 1;
+}
+
+.line-map-line-btn.active {
+  opacity: 1;
+  border-color: var(--text);
+}
+
+.line-map-strip-wrap {
+  margin-top: 10px;
+  overflow-x: auto;
+  background: var(--surface-muted);
+  border-radius: 10px;
+}
+
+.line-map-strip {
+  display: flex;
+  align-items: flex-end;
+  width: max-content;
+  min-width: 100%;
+  padding: 16px 18px;
+  gap: 2px;
+}
+
+.line-map-segment {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* 지선 구간(예: 성수지선)임을 알려주는 작은 라벨. 본선과 헷갈리지 않도록 지선 구간
+   위에만 붙는다. */
+.line-map-branch-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--line-color);
+  white-space: nowrap;
+  margin: 0 0 4px 8px;
+}
+
+.line-map-segment-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.line-map-segment-track::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 6px;
+  height: 4px;
+  background: var(--line-color);
+}
+
+/* 지선 구간은 선을 점선으로, 살짝 옅게 그려서 본선과 시각적으로 구분한다. */
+.line-map-segment.branch .line-map-segment-track::before {
+  background: none;
+  border-top: 3px dashed var(--line-color);
+  opacity: 0.7;
+  height: 0;
+  top: 8px;
+}
+
+.line-map-station {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 0 9px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.line-map-station-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 3px solid var(--line-color);
+}
+
+.line-map-station:hover .line-map-station-dot {
+  background: var(--line-color);
+}
+
+.line-map-station-name {
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.line-map-loop-note {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  padding: 0 9px 6px;
+  align-self: flex-end;
 }
 
 .status {
@@ -299,6 +445,12 @@ button.station-strip-side:hover {
   flex-shrink: 0;
 }
 
+/* "경의", "공항"처럼 두 글자짜리 라벨은 20px 원 안에서 잘려 보여서 폰트를 줄인다. */
+.line-badge.two-chars {
+  font-size: 8px;
+  letter-spacing: -0.5px;
+}
+
 .time {
   margin: 0 0 4px;
   font-size: 28px;
@@ -306,8 +458,16 @@ button.station-strip-side:hover {
   color: var(--text);
 }
 
+/* 막차가 끝난 상태에선 "오늘 막차는 끝났어요"가 먼저 나오고 시간은 참고용으로만 아래에
+   붙으므로, 이땐 시간 쪽을 눈에 덜 띄게 줄인다. */
+.remaining.ended + .time {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--deadline-label);
+}
+
 .remaining {
-  margin: 0;
+  margin: 4px 0;
   color: var(--accent);
   font-weight: 600;
 }
@@ -315,6 +475,11 @@ button.station-strip-side:hover {
 .remaining.ended,
 .mini-card span.ended {
   color: var(--warning-text);
+}
+
+.remaining.ended {
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .note {
@@ -399,10 +564,18 @@ button.station-strip-side:hover {
 }
 
 .deadline-time {
-  margin: 0 0 4px;
+  margin: 4px 0;
   font-size: 32px;
   font-weight: 800;
   color: var(--accent-strong);
+}
+
+/* 막차가 끝난 상태에선 "오늘 막차는 끝났어요"가 먼저 나오고 시간은 그 아래 참고용으로만
+   붙으므로, 이땐 시간 쪽을 눈에 덜 띄게 줄인다. */
+.remaining.ended + .deadline-time {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--deadline-label);
 }
 
 .total-estimate {
@@ -486,7 +659,9 @@ button.station-strip-side:hover {
 
 .mini-card {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  gap: 4px 10px;
   font-size: 13px;
   background: var(--surface-muted);
   color: var(--text);
@@ -503,6 +678,12 @@ button.station-strip-side:hover {
 .quick-exit-title {
   font-weight: 600;
   color: var(--text-muted) !important;
+}
+
+/* 문장 속에 인라인으로 들어가는 아이콘 배지(DoorIcon, WalkIcon 등) 공통 정렬 */
+.icon-badge {
+  vertical-align: -3px;
+  margin-right: 2px;
 }
 
 .quick-exit-block {
