@@ -61,9 +61,12 @@ body {
   text-align: center;
   border-inline: 1px solid var(--border);
   min-height: 100svh;
-  display: flex;
-  flex-direction: column;
   box-sizing: border-box;
+  /* 자식은 .page 하나뿐이라 원래 display:flex였어도 배치 효과는 없었는데, 대신
+     flex-direction:column의 stretch 폭 계산이 내부에 가로로 긴 스크롤 영역(노선도
+     역 목록 등)이 있을 때 .page 너비를 그 콘텐츠 크기만큼 잘못 부풀리는 버그를
+     일으켰다(모바일에서 화면이 옆으로 밀리던 원인). block이면 같은 높이 효과
+     (min-height)를 내면서 이 문제가 없다. */
 }
 
 h1,
